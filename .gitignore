@@ -4,6 +4,11 @@ cabal-dev
 *.hi
 *.chi
 *.chs.h
+*.pdf
+*.zip
+*.swp
+*.swo
+.DS_Store
 .virtualenv
 .hsenv
 .cabal-sandbox/
