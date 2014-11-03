@@ -1,4 +1,5 @@
 import Text.Regex.Posix
+import Data.List
 
 type Row = String
 type Board = [Row]
@@ -129,8 +130,7 @@ non_null (x:xs)
 
     
 -- Board generation
-
-generate player history board = foldl (++) [] (generate_helper 0 player board)
+generate player history board = (foldl (++) [] (generate_helper 0 player board)) \\ history -- different added ~x3 time hit
 generate_helper n player board
     | n == 6 = []
     | otherwise = (map (rotate_board_n (6-n)) (new_boards player (rotate_board_n n board))) : generate_helper (n+1) player board
