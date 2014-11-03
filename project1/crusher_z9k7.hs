@@ -1,7 +1,11 @@
-main = print $ out
+import Text.Regex.Posix
+
+main = mapM_ print $ out
 
 a = parse_current_board "WWW-WW-------BB-BBB" 3
-out = rotate_board (rotate_board a)
+out = generate "W" ["WWW","-WW-","-----","-BB-","BBB"] -- First Board
+-- out = generate "W" ["---","----","--W--","----","---"] -- One piece in middle
+-- out = generate "B" ["WW-","-W--","-----","B-B-","--B"] -- 12 moves for B
 
 
 -- Board parser
@@ -29,6 +33,11 @@ rotate_board_helper board board_size current_row result
         row = row_size board_size current_row
         sliced_board = slice_board board row
 
+-- Rotates the board n number of time clockwise
+rotate_board_n n board
+    | n == 0 = board
+    | otherwise = rotate_board_n (n-1) (rotate_board board)
+
 {-| fst    lst
     */  *  *        Returns a tuple with the first value
    */  *  *  *   <- as the "slice" taken from the left (string of values)
@@ -48,6 +57,50 @@ non_null [] = []
 non_null (x:xs)
     | null x = non_null xs
     | otherwise = x : non_null xs
+
+
+generate player board = foldl (++) [] (generate_helper 0 player board)
+generate_helper n player board
+    | n == 6 = []
+    | otherwise = (map (rotate_board_n (6-n)) (new_boards player (rotate_board_n n board))) : generate_helper (n+1) player board
+
+new_boards player board = new_board_for_row 0 player board
+
+new_board_for_row num player board
+    | num == longest (size_of board) = []
+    | otherwise = (new_board_helper player (take num board) (new_moves player (board !! num)) (drop (num + 1) board))
+        ++ new_board_for_row (num + 1) player board
+
+new_board_helper _ _ [] _ = []
+new_board_helper player top (x:xs) bottom = (top ++ (x:bottom)) : new_board_helper player top xs bottom
+
+new_moves player row = (new_slides player row) ++ (new_jumps player row)
+new_jumps player row = new_jumps_right player row
+new_jumps_right player row = jump_right player row (match_indexes player row jump_match_pattern)
+
+new_slides player row = new_slides_right player row
+new_slides_right player row = slide_right player row (match_indexes player row slide_match_pattern)
+
+other_colour colour = if colour == "W" then "B" else "W"
+slide_match_pattern   colour = colour ++ "-"
+slide_replace_pattern colour = "-" ++ colour
+jump_match_pattern    colour = colour ++ colour ++ "[^" ++ colour ++ "]"
+jump_replace_pattern  colour = "-" ++ colour ++ colour
+
+match_indexes player row pattern = getAllMatches $ (row =~ (pattern player) :: AllMatches [] (MatchOffset, MatchLength))
+slide_right _ row [] = []
+slide_right player row (x:xs) = (replaceSegment row (fst x) (slide_replace_pattern player)) : slide_right player row xs
+jump_right _ row [] = []
+jump_right player row (x:xs) = (replaceSegment row (fst x) (jump_replace_pattern player)) : jump_right player row xs
+
+
+-- Replace Segment we were given from pegpuzzle.hs
+replaceSegment oldList pos segment
+   | pos == 0  = segment ++ drop (length segment) oldList
+   | otherwise =
+        (head oldList):
+        (replaceSegment (tail oldList) (pos - 1) segment)
+
 
 
 -- Board Math
