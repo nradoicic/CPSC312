@@ -2,6 +2,7 @@ import Text.Regex.Posix
 
 type Row = String
 type Board = [Row]
+type Rating = (Board, Int)
 
 main = mapM_ print $ out
 
@@ -66,21 +67,53 @@ rotate_board_multi:: Board -> Int -> Board
 rotate_board_multi board 0 = board
 rotate_board_multi board x = rotate_board_multi (rotate_board board) (x-1)
 
+-- MINIMAX
+pick_board:: [Board] -> Char -> Int -> Board
+pick_board (board:history) player max = fst (best_of player max 1 (board:history) (generate player (board:history) board))
+
+best_of:: Char -> Int -> Int -> [Board] -> [Board] -> Rating
+best_of player max depth (p:h) [] = rate_board player (p:h) p -- consider using the difference between max and depth, win earlier is better?
+best_of player max depth (p:h) options
+    | depth == max  = comp (rate_all options) --leaves
+    | otherwise     = comp (map (next_gen_best) options) 
+    where
+        comp = [find_min,find_max]!!(mod depth 2)
+        base = [9999,-9999]!!(mod depth 2)
+        rate_all = map (rate_board player (p:h))
+        next_gen option = generate (other player) (option:(p:h)) option
+        next_gen_best option = swap_out option (best_of (other player) max (depth+1) (option:(p:h)) (next_gen option))
+        swap_out option rating = (option, snd rating)
+
+find_min:: [Rating] -> Rating
+find_min (r:rs) = find_helper r rs (<)
+
+find_max:: [Rating] -> Rating
+find_max (r:rs) = find_helper r rs (>)
+
+find_helper:: Rating -> [Rating] -> (Int -> Int -> Bool) -> Rating
+find_helper best [] _ = best
+find_helper best (r:rs) op 
+    | op (snd best) (snd r) = find_helper best rs op
+    | otherwise             = find_helper r rs op
+        
 -- Heuristics --
 -- Basic Heuristic 
 -- it really likes to win
 -- it really doesn't like to lose
 -- it likes having pieces
-rate_board:: Board -> Char -> Int
-rate_board board player
-    | is_win_for  player board  = 999
-    | is_loss_for player board  = -999
-    | otherwise                 = count player board
+rate_board:: Char -> [Board] -> Board -> Rating
+rate_board player history board = (board, heuristic player history board)
+
+heuristic:: Char -> [Board] -> Board -> Int
+heuristic player history board
+    | is_win_for  player history board  = 99
+    | is_loss_for player history board  = -99
+    | otherwise                 = (count player board) - (count (other player) board)
     
-is_win_for:: Char -> Board -> Bool
-is_win_for  player board = is_loss_for (other player) board
-is_loss_for:: Char -> Board -> Bool
-is_loss_for player board = (count player board) < size_of board
+is_win_for::  Char -> [Board] -> Board -> Bool
+is_win_for  player history board = is_loss_for (other player) history board
+is_loss_for:: Char -> [Board] -> Board -> Bool
+is_loss_for player history board = ((count player board) < size_of board) || (null (generate player history board))
 
 count:: Char -> Board -> Int
 count c board = length (filter (== c) (dump_board board))
@@ -96,6 +129,8 @@ non_null (x:xs)
     | null x = non_null xs
     | otherwise = x : non_null xs
 
+    
+-- Board generation
 
 generate player board = foldl (++) [] (generate_helper 0 player board)
 generate_helper n player board
@@ -138,7 +173,6 @@ replaceSegment oldList pos segment
    | otherwise =
         (head oldList):
         (replaceSegment (tail oldList) (pos - 1) segment)
-
 
 
 -- Board Math
