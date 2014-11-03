@@ -7,11 +7,9 @@ type Rating = (Board, Int)
 main = mapM_ print $ out
 
 a = parse_current_board "WWW-WW-------BB-BBB" 3
-out = generate "W" ["WWW","-WW-","-----","-BB-","BBB"] -- First Board
+out = generate "W" [["WWW","-WW-","-----","-BB-","BBB"]] ["WWW","-WW-","-----","-BB-","BBB"] -- First Board
 -- out = generate "W" ["---","----","--W--","----","---"] -- One piece in middle
 -- out = generate "B" ["WW-","-W--","-----","B-B-","--B"] -- 12 moves for B
-
-main = print $ out
 
 -- Board parser
 -- Input  : A string to represent the board, the size of one side of the board
@@ -68,10 +66,10 @@ rotate_board_multi board 0 = board
 rotate_board_multi board x = rotate_board_multi (rotate_board board) (x-1)
 
 -- MINIMAX
-pick_board:: [Board] -> Char -> Int -> Board
+pick_board:: [Board] -> String -> Int -> Board
 pick_board (board:history) player max = fst (best_of player max 1 (board:history) (generate player (board:history) board))
 
-best_of:: Char -> Int -> Int -> [Board] -> [Board] -> Rating
+best_of:: String -> Int -> Int -> [Board] -> [Board] -> Rating
 best_of player max depth (p:h) [] = rate_board player (p:h) p -- consider using the difference between max and depth, win earlier is better?
 best_of player max depth (p:h) options
     | depth == max  = comp (rate_all options) --leaves
@@ -101,27 +99,27 @@ find_helper best (r:rs) op
 -- it really likes to win
 -- it really doesn't like to lose
 -- it likes having pieces
-rate_board:: Char -> [Board] -> Board -> Rating
+rate_board:: String -> [Board] -> Board -> Rating
 rate_board player history board = (board, heuristic player history board)
 
-heuristic:: Char -> [Board] -> Board -> Int
+heuristic:: String -> [Board] -> Board -> Int
 heuristic player history board
     | is_win_for  player history board  = 99
     | is_loss_for player history board  = -99
     | otherwise                 = (count player board) - (count (other player) board)
     
-is_win_for::  Char -> [Board] -> Board -> Bool
+is_win_for::  String -> [Board] -> Board -> Bool
 is_win_for  player history board = is_loss_for (other player) history board
-is_loss_for:: Char -> [Board] -> Board -> Bool
+is_loss_for:: String -> [Board] -> Board -> Bool
 is_loss_for player history board = ((count player board) < size_of board) || (null (generate player history board))
 
-count:: Char -> Board -> Int
-count c board = length (filter (== c) (dump_board board))
+count:: String -> Board -> Int
+count c board = length (filter (== (c!!0)) (dump_board board))
 
-other:: Char -> Char
+other:: String -> String
 other player 
-    | player == 'B' = 'W'
-    | player == 'W' = 'B'
+    | player == "B" = "W"
+    | player == "W" = "B"
 
 -- Remove all null values from a list
 non_null [] = []
@@ -132,7 +130,7 @@ non_null (x:xs)
     
 -- Board generation
 
-generate player board = foldl (++) [] (generate_helper 0 player board)
+generate player history board = foldl (++) [] (generate_helper 0 player board)
 generate_helper n player board
     | n == 6 = []
     | otherwise = (map (rotate_board_n (6-n)) (new_boards player (rotate_board_n n board))) : generate_helper (n+1) player board
@@ -154,7 +152,6 @@ new_jumps_right player row = jump_right player row (match_indexes player row jum
 new_slides player row = new_slides_right player row
 new_slides_right player row = slide_right player row (match_indexes player row slide_match_pattern)
 
-other_colour colour = if colour == "W" then "B" else "W"
 slide_match_pattern   colour = colour ++ "-"
 slide_replace_pattern colour = "-" ++ colour
 jump_match_pattern    colour = colour ++ colour ++ "[^" ++ colour ++ "]"
