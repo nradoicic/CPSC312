@@ -7,16 +7,25 @@ type Rating = (Board, Int)
 
 main = mapM_ print $ out
 
-a = parse_current_board "WWW-WW-------BB-BBB" 3
+a = parse_current_board 3 "WWW-WW-------BB-BBB"
+b = parse_current_board 3 "WWW-WW--B---B---BBB"
 out = generate 'W' [["WWW","-WW-","-----","-BB-","BBB"]] ["WWW","-WW-","-----","-BB-","BBB"] -- First Board
 -- out = generate "W" ["---","----","--W--","----","---"] -- One piece in middle
 -- out = generate "B" ["WW-","-W--","-----","B-B-","--B"] -- 12 moves for B
+
+--Entry point
+crusher_z9k7:: [String] -> Char -> Int -> Int -> [String]
+crusher_z9k7 board_strings player max_depth board_size
+    = map dump_board result
+    where 
+        boards = map (parse_current_board board_size) board_strings
+        result = pick_board boards player max_depth
 
 -- Board parser
 -- Input  : A string to represent the board, the size of one side of the board
 -- Output : A list of strings, each string representing a different row of the board
 --      "WWW-WW-------BB-BBB" -> ["WWW","-WW-","-----","-BB-","BBB"]
-parse_current_board board_string board_size = parse_current_board_helper board_string board_size 1 []
+parse_current_board board_size board_string  = parse_current_board_helper board_string board_size 1 []
 
 parse_current_board_helper board_string board_size current_row result
     | null board_string = reverse result
@@ -60,29 +69,54 @@ slice_board_helper (x:xs) rest_of_board row remainder
     | null xs = ((reverse ((head x):row)),(((tail x):remainder) ++ rest_of_board))
     | otherwise = slice_board_helper xs rest_of_board ((head x):row) ((tail x): remainder)
 
--- Board Multi Rotator
--- Rotates a board the given number of times
-rotate_board_multi:: Board -> Int -> Board
-rotate_board_multi board 0 = board
-rotate_board_multi board x = rotate_board_multi (rotate_board board) (x-1)
-
 -- MINIMAX
-pick_board:: [Board] -> Char -> Int -> Board
-pick_board (board:history) player max = fst (best_of player max 1 (board:history) (generate player (board:history) board))
+-- Main Entry point, computes the next move to make and returns a history list with the next move at the head.
+-- If no moves are availble the next board will just be the current board.
+--
+--  Arguments: 
+--      (board:history): The history of boards with the current board state at the head
+--      player:          A character representation for which piece is moving. May only be 'B' or 'W'
+--      max:             The maximum number of moves for the algorithm to look ahead.
+pick_board:: [Board] -> Char -> Int -> [Board]
+pick_board (board:history) player max 
+    | null opening_moves = board:(board:history)
+    | otherwise = (fst (best_of player max 1 (board:history) opening_moves)):(board:history)
+        where opening_moves = (generate player (board:history) board)
 
+
+-- Function which performs actual minimax search
+--
+--  Arguments: 
+--      (p:h):   The history of boards with the current board state at the head
+--      player:  A character representation for which piece is moving. May only be 'B' or 'W'
+--      max:     The maximum number of moves for the algorithm to look ahead.
+--      depth:   The current depth of search
+--      options: The boards available to move to at the current search depth
 best_of:: Char -> Int -> Int -> [Board] -> [Board] -> Rating
-best_of player max depth (p:h) [] = rate_board player (p:h) p -- consider using the difference between max and depth, win earlier is better?
+-- base case where no moves were available. This means that the last board state was a winning move.
+-- so rate the last board state as it is a leaf of the search tree.
+best_of player max depth (p:h) [] = rate_board player (p:h) p
+-- when we are at a leaf of the search (depth == max) rate each board and compare the results
+-- otherwise compute the possible boards attainable from the current depth and recurse
 best_of player max depth (p:h) options
-    | depth == max  = comp (rate_all options) --leaves
+    | depth == max  = comp (rate_all options) -- leaves
     | otherwise     = comp (map (next_gen_best) options) 
     where
+        -- alternate finding the minimum and maximum of our options
         comp = [find_min,find_max]!!(mod depth 2)
-        base = [9999,-9999]!!(mod depth 2)
-        rate_all = map (rate_board player (p:h))
+        -- helpers to rate everything
+        rate_all            = map (rate_all_h)
+        rate_all_h option   = rate_board player (option:(p:h)) option
+        -- helper to compute the next generation of boards
         next_gen option = generate (other player) (option:(p:h)) option
+        -- recursion helper
         next_gen_best option = swap_out option (best_of (other player) max (depth+1) (option:(p:h)) (next_gen option))
-        swap_out option rating = (option, snd rating)
+        -- we are looking for the best next move to make, so propagate the score, but not the board
+        -- we invert the score each time, this is because each board rating will rate boards positively
+        -- based on which piece is moving, so we have to alternate the signs to keep things in line.
+        swap_out option rating = (option, -1*(snd rating))
 
+-- Functions to find the min or max scored board by rating
 find_min:: [Rating] -> Rating
 find_min (r:rs) = find_helper r rs (<)
 
@@ -112,11 +146,12 @@ heuristic player history board
 is_win_for::  Char -> [Board] -> Board -> Bool
 is_win_for  player history board = is_loss_for (other player) history board
 is_loss_for:: Char -> [Board] -> Board -> Bool
-is_loss_for player history board = ((count player board) < size_of board) || (null (generate player history board))
+is_loss_for player history board = ((count player board) < size_of board) --doesn't check out of moves yet
 
 count:: Char -> Board -> Int
 count c board = length (filter (== c) (dump_board board))
 
+-- helper to switch players
 other:: Char -> Char
 other player 
     | player == 'B' = 'W'

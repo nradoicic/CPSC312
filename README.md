@@ -8,4 +8,5 @@ Project 1 Notes:
 * Heuristics should prefer earlier victory
 * I wouldn't mind having some type decs in there
 * COMMENTSCOMMENTSCOMMENTSCOMMENTSCOMMENTS
-* write a top level function which constructs the proper output
+ * I commented the MINIMAX stuff
+* ~~write a top level function which constructs the proper output~~
