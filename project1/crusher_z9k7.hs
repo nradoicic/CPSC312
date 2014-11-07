@@ -23,12 +23,14 @@ parse_current_board_helper board_string board_size current_row result
     | otherwise = parse_current_board_helper (drop row board_string) board_size (current_row + 1) ((take row board_string):result)
     where
         row = row_size board_size current_row
-		
+
+
 -- Board Serializer
 -- Input  : A list of strings representing the rows of a board
 -- Output : A String which represents the input board
 dump_board:: Board -> String
 dump_board board = foldl (++) "" board
+
 
 -- Board Rotator
 --     Takes successive slices of the board and cons them into a result list
@@ -43,6 +45,8 @@ rotate_board_helper board board_size current_row result
         sliced_board = slice_board board row
 
 -- Rotates the board n number of time clockwise
+-- Input  : A board (list of strings), a number of times to rotate the board
+-- Output : The board rotated the provided number of times
 rotate_board_n n board
     | n == 0 = board
     | otherwise = rotate_board_n (n-1) (rotate_board board)
@@ -53,18 +57,12 @@ rotate_board_n n board
   */  *  *  *  *    and the second value as the remainder of the board
 ----------------
    *  *  *  *    <- The rest of the board which is ignored
-     *  *  *
-|-}
+     *  *  *        |-}
 slice_board board size = slice_board_helper (reverse (take size (non_null board))) (drop size (non_null board)) [] []
 slice_board_helper (x:xs) rest_of_board row remainder
     | null xs = ((reverse ((head x):row)),(((tail x):remainder) ++ rest_of_board))
     | otherwise = slice_board_helper xs rest_of_board ((head x):row) ((tail x): remainder)
 
--- Board Multi Rotator
--- Rotates a board the given number of times
-rotate_board_multi:: Board -> Int -> Board
-rotate_board_multi board 0 = board
-rotate_board_multi board x = rotate_board_multi (rotate_board board) (x-1)
 
 -- MINIMAX
 pick_board:: [Board] -> Char -> Int -> Board
@@ -94,9 +92,9 @@ find_helper best [] _ = best
 find_helper best (r:rs) op 
     | op (snd best) (snd r) = find_helper best rs op
     | otherwise             = find_helper r rs op
-        
+
 -- Heuristics --
--- Basic Heuristic 
+-- Basic Heuristic
 -- it really likes to win
 -- it really doesn't like to lose
 -- it likes having pieces
@@ -108,7 +106,7 @@ heuristic player history board
     | is_win_for  player history board  = 99
     | is_loss_for player history board  = -99
     | otherwise                 = (count player board) - (count (other player) board)
-    
+
 is_win_for::  Char -> [Board] -> Board -> Bool
 is_win_for  player history board = is_loss_for (other player) history board
 is_loss_for:: Char -> [Board] -> Board -> Bool
@@ -118,23 +116,38 @@ count:: Char -> Board -> Int
 count c board = length (filter (== c) (dump_board board))
 
 other:: Char -> Char
-other player 
+other player
     | player == 'B' = 'W'
     | player == 'W' = 'B'
 
 -- Remove all null values from a list
+-- Input  : A list of lists
+-- Output : The same list with empty values removed
 non_null [] = []
 non_null (x:xs)
     | null x = non_null xs
     | otherwise = x : non_null xs
 
-    
--- Board generation
+-- Board Generation
+--      This function is the top-level function to look one move forward in the game,
+--      It will try to move all the pieces horizontally in the top half of the board
+--      and then rotate the board by 60 degrees.  It will run through this cycle
+--      6 times to get all of the possible moves.
+-- Input  : A history of the previous boards in this game
+--          The current board
+--          The player whose turn it is
+-- Output : A list of possible board one move ahead
 generate player history board = (foldl (++) [] (generate_helper 0 player board)) \\ history -- different added ~x3 time hit
+
 generate_helper n player board
     | n == 6 = []
     | otherwise = (map (rotate_board_n (6-n)) (new_boards player (rotate_board_n n board))) : generate_helper (n+1) player board
 
+
+-- Generates new boards for a given orientation of the board.
+--      Try and slide or crush a piece in the top half of the board
+-- Input  : The player whose turn it is and the board
+-- Output : All new board if the pieces only moved horizontally
 new_boards player board = new_board_for_row 0 player board
 
 new_board_for_row num player board
@@ -145,18 +158,37 @@ new_board_for_row num player board
 new_board_helper _ _ [] _ = []
 new_board_helper player top (x:xs) bottom = (top ++ (x:bottom)) : new_board_helper player top xs bottom
 
+
+-- Given a single "row" of the board (a horizontal slice of 1 row of pieces)
+--      This function will return all possible slides or crushes in this row
+-- Input  : The player whose turn it is and a row from the board
+-- Output : All the rows resulting from legal moves by the current player in this row
 new_moves player row = (new_slides player row) ++ (new_jumps player row)
+
+-- Given a single "row" of the board (a horizontal slice of 1 row of pieces)
+--      This function will return all possible jumps (or crushes)
+-- Input  : The player whose turn it is and a row from the board
+-- Output : All the rows resulting from the current player "crushing" only
 new_jumps player row = new_jumps_right player row
 new_jumps_right player row = jump_right player row (match_indexes player row jump_match_pattern)
 
+-- Given a single "row" of the board (a horizontal slice of 1 row of pieces)
+--      This function will return all possible slides in this row
+-- Input  : The player whose turn it is and a row from the board
+-- Output : All the rows resulting from the current player sliding a piece only
 new_slides player row = new_slides_right player row
 new_slides_right player row = slide_right player row (match_indexes player row slide_match_pattern)
 
+
+-- Regex patters for jumps and slides
 slide_match_pattern   colour = colour:"-"
 slide_replace_pattern colour = '-':[colour]
 jump_match_pattern    colour = colour:colour:'[':'^':colour:"]"
 jump_replace_pattern  colour = '-':colour:[colour]
 
+-- Regex Matching
+-- Input  : The player whose turn it is and row from the board
+-- Output : the indexes in the row which a player may slide or crush a piece
 match_indexes player row pattern = getAllMatches $ (row =~ (pattern player) :: AllMatches [] (MatchOffset, MatchLength))
 slide_right _ row [] = []
 slide_right player row (x:xs) = (replaceSegment row (fst x) (slide_replace_pattern player)) : slide_right player row xs
@@ -173,6 +205,7 @@ replaceSegment oldList pos segment
 
 
 -- Board Math
+-- Small helper functions which are self explanatory
 longest :: Int -> Int
 longest size = (size * 2) - 1
 
@@ -181,5 +214,5 @@ row_size board_size current_row = ((2 * board_size) - abs(board_size - current_r
 size_of board = length (head board)
 
 tiles_in board = (2*n - 1) + (n - 1) * (3*n - 2)
-    where 
+    where
         n = size_of board
