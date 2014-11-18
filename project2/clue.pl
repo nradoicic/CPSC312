@@ -69,7 +69,7 @@ hand_possibility(P,X) :- card(X), in_hand(P,X),      not(in_hand(Other,X)), not(
 hand_possibility(P,X) :- card(X), hasnt_passed(P,X), not(in_hand(Other,X)), not(Other == P).
 
 /* true if a player P hasn't yet passed on a card X just to compactify things */
-hasnt_passed(P,X) :- not(pass(P,X,_,_)) ; not(pass(P,_,X,_)) ; not(pass(P,_,_,X)).
+hasnt_passed(P,X) :- not(pass(P,X,_,_)), not(pass(P,_,X,_)), not(pass(P,_,_,X)).
 
 /* what is definitely in someone's hand */
 in_hand(P,X) :- showed(P, X, Y, Z), not(hand_possibility(P,Y)), not(hand_possibility(P,Z)).
@@ -82,6 +82,3 @@ certain(P) :- setof(X,in_hand(P,X),Hand), setof(X,hand_possibility(P,X),Poss), p
    ie we can eliminate things that are not in their hand as possibilities once 
    we know they have N cards if we know their hand has size N
    But I don't really want to do arithmetic*/
-
-
-
