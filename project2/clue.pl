@@ -109,16 +109,18 @@ possible_room(X)    :- room(X),     not(in_hand(_,X)).
 possible_weapon(X)  :- weapon(X),   not(in_hand(_,X)).
 
 /* what could be in someones hand innocent until proven guilty*/
-hand_possibility(P,X) :- card(X), in_hand(P,X),      not(in_hand(Other,X)), not(Other == P).
+hand_possibility(P,X) :- card(X), in_hand(P,X). % for some reason adding the exclusion based on other player's hands doesn't work here.
 hand_possibility(P,X) :- card(X), hasnt_passed(P,X), not(in_hand(Other,X)), not(Other == P).
 
 /* true if a player P hasn't yet passed on a card X just to compactify things */
 hasnt_passed(P,X) :- not(pass(P,X,_,_)), not(pass(P,_,X,_)), not(pass(P,_,_,X)).
 
-/* what is definitely in someone's hand */
-in_hand(P,X) :- showed(P, X, Y, Z), not(hand_possibility(P,Y)), not(hand_possibility(P,Z)).
-in_hand(P,Y) :- showed(P, X, Y, Z), not(hand_possibility(P,X)), not(hand_possibility(P,Z)).
-in_hand(P,Z) :- showed(P, X, Y, Z), not(hand_possibility(P,X)), not(hand_possibility(P,Y)).
+/* we can infer what is in someone's hand based on what they have shown and knowing what is NOT in their hand
+   but defining this as a condition on in_hand causes issues of infinite looping between in_hand and hand_possibility
+   so instead we keep in_hand as pure data, it is only ever asserted, not inferred.*/
+infer_hand(P) :- showed(P, X, Y, Z), not(hand_possibility(P,Y)), not(hand_possibility(P,Z)), assert(in_hand(P,X)).
+infer_hand(P) :- showed(P, X, Y, Z), not(hand_possibility(P,X)), not(hand_possibility(P,Z)), assert(in_hand(P,Y)).
+infer_hand(P) :- showed(P, X, Y, Z), not(hand_possibility(P,X)), not(hand_possibility(P,Y)), assert(in_hand(P,Z)).
 
 /* tells us if we know absolutely what is in someone's hand */
 certain(P) :- setof(X,in_hand(P,X),Hand), setof(X,hand_possibility(P,X),Poss), permutation(Hand,Poss).
