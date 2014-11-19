@@ -7,11 +7,11 @@ init :-
     retractall(suspect(X)),
     retractall(weapon(X)),
     retractall(room(X)),
+    retractall(in_hand(_,_)),
     write('Welcome to Clue!'),nl,
     write('Please enter the names players playing today.'),nl,
     write('Enter the word \'done\' to continue\'.'),nl,
     input_players,nl,nl,
-    assert(player(computron)),
     write('Please enter the suspects (characters) you\'d like available in the game.'),nl,
     write('Enter the word \'done\' to continue\'.'),nl,
     write('If you would like to play with classic suspects, enter \'default\''),nl,
@@ -25,7 +25,12 @@ init :-
     write('If you would like to play with classic rooms, enter \'default\''),nl,
     input_rooms,nl,nl,
     write('Ready to play!'),nl,nl,
+    write('What is in your hand?'),nl,
+    write('Enter the word \'done\' to continue\'.'),nl,
+    input_hand,
     game.
+
+me :- player(X),!.
 
 /* Helper functions which loop to keep entering each type of card */
 input_players :-
@@ -48,6 +53,11 @@ input_rooms :-
     read(X),
     new_room(X).
 
+input_hand:-
+    write('    Card: '),
+    read(X),
+    new_card(X).
+
 new_player(done) :- !.
 new_player(X) :- assert(player(X)),input_players.
 new_suspect(done) :- !.
@@ -59,7 +69,8 @@ new_weapon(X) :- assert(weapon(X)),input_weapons.
 new_room(done) :- !.
 new_room(default) :- default_rooms.
 new_room(X) :- assert(room(X)),input_rooms.
-
+new_card(done) :- !.
+new_card(X) :- assert(in_hand(me,X)),input_hand.
 
 game :-
     !,
@@ -156,7 +167,6 @@ def_init :-
     assert(player(a)),
     assert(player(b)),
     assert(player(c)),
-    assert(player(computron)),
     default_suspects,
     default_weapons,
     default_rooms,
