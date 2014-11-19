@@ -157,7 +157,7 @@ default_rooms :-
     assert(room(ballroom)),
     assert(room(billiard)),
     assert(room(library)),
-    assert(room(studyr)),
+    assert(room(study)),
     assert(room(lounge)),
     assert(room(dining)).
 
