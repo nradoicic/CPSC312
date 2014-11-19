@@ -30,8 +30,6 @@ init :-
     input_hand,
     game.
 
-me :- player(X),!.
-
 /* Helper functions which loop to keep entering each type of card */
 input_players :-
     write('    Player name: '),
@@ -70,7 +68,7 @@ new_room(done) :- !.
 new_room(default) :- default_rooms.
 new_room(X) :- assert(room(X)),input_rooms.
 new_card(done) :- !.
-new_card(X) :- assert(in_hand(me,X)),input_hand.
+new_card(X) :- player(Me),!,assert(in_hand(Me,X)),input_hand.
 
 game :-
     !,
