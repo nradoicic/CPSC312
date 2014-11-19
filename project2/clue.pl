@@ -1,32 +1,32 @@
 :- use_module(library(lists)).
 :- style_check(-singleton).
 
+/* Little wizard to get everything going */
 init :-
     retractall(player(X)),
     retractall(suspect(X)),
     retractall(weapon(X)),
     retractall(room(X)),
-    retractall(card(X)),
     write('Welcome to Clue!'),nl,
     write('Please enter the names players playing today.'),nl,
     write('Enter the word \'done\' to continue\'.'),nl,
     input_players,nl,nl,
     write('Please enter the suspects (characters) you\'d like available in the game.'),nl,
     write('Enter the word \'done\' to continue\'.'),nl,
-    write('If you would like to just play a standard game of clue, simply type \'default\''),nl,
+    write('If you would like to play with classic suspects, enter \'default\''),nl,
     input_suspects,nl,nl,
     write('Please enter the weapons you\'d like available in the game.'),nl,
     write('Enter the word \'done\' to continue\'.'),nl,
+    write('If you would like to play with classic weapons, enter \'default\''),nl,
     input_weapons,nl,nl,
     write('Please enter the rooms you\'d like available in the game.'),nl,
     write('Enter the word \'done\' to continue\'.'),nl,
+    write('If you would like to play with classic rooms, enter \'default\''),nl,
     input_rooms,nl,nl,
     write('Ready to play!'),nl,nl,
-    assert(card(X) :- room(X)),
-    assert(card(X) :- weapon(X)),
-    assert(card(X) :- suspect(X)),
     game.
 
+/* Helper functions which loop to keep entering each type of card */
 input_players :-
     write('    Player name: '),
     read(X),
@@ -64,18 +64,26 @@ game :-
     !,
     write('CLUE!!').
 
+/* All suspects, weapons, and rooms are cards in the game.
+ * When you re-init, the "deck" may change. */
+:- dynamic
+    card/1. %what is in the deck
+
 /* in_hand(Player,Card) is true when we know a card is definitely in someone's hand
    this may happen when a card is shown to us and can be inferred at certain specific points */
 :- dynamic
     in_hand/2. %track what's in one's hand
+
 /* suggested(Player,Card,Card,Card) is true when someone suggests a triple of suspect
    weapon and room (order doesn't matter) */
 :- dynamic
     suggested/4. %who suggests what
+
 /* showed(Plater,Card,Card,Card) is true when a player shows a card to another player
    to disprove a suggestion, based on other knowledge this may confirm what is in a players hand */
 :- dynamic
     showed/4. %when someone shows a card for a suggestion
+
 /* pass(Player,Card,Card,Card) is true when a player passes on disproving a suggestion
    this can be used to eliminate possibilities from their hand since to pass one must not have
    any of the suggested cards*/
@@ -107,6 +115,9 @@ certain(P) :- setof(X,in_hand(P,X),Hand), setof(X,hand_possibility(P,X),Poss), p
    we know they have N cards if we know their hand has size N
    But I don't really want to do arithmetic*/
 
+card(X) :- room(X).
+card(X) :- weapon(X).
+card(X) :- suspect(X).
 
 % Defaults
 default_suspects :-
@@ -141,14 +152,10 @@ def_init :-
     retractall(suspect(X)),
     retractall(weapon(X)),
     retractall(room(X)),
-    retractall(card(X)),
     assert(player(a)),
     assert(player(b)),
     assert(player(c)),
     default_suspects,
     default_weapons,
     default_rooms,
-    assert(card(X) :- suspect(X)),
-    assert(card(X) :- weapon(X)),
-    assert(card(X) :- room(X)),
     game.
