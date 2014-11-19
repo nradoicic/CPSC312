@@ -70,9 +70,33 @@ new_room(X) :- assert(room(X)),input_rooms.
 new_card(done) :- !.
 new_card(X) :- player(Me),!,assert(in_hand(Me,X)),input_hand.
 
-game :-
-    !,
-    write('CLUE!!').
+/* Game loop
+   runs through the steps of the game
+   currently no accusations, not sure what to do with those anyway
+   doesn't output anything useful yet, need to know when to ask
+   we can dump data all the time whatevs.*/
+game :- write('Who\'s turn is it?'),nl,
+        read(Player),nl,nl,
+        write('What 3 did they suggest?'),nl,
+        read(X),
+        read(Y),
+        read(Z),nl,nl,
+        pass_loop(X,Y,Z),
+        write('Who showed a card?'),nl,
+        read(Shower),nl,nl,
+        assert(showed(Shower,X,Y,Z)), % think hard about when it comes full circle
+        game.
+       
+pass_loop(X,Y,Z) :- 
+    write('Who passed?'),nl, 
+    read(Player),nl,nl, 
+    record_pass(Player,X,Y,Z).
+
+record_pass(done,_,_,_) :- !.
+record_pass(P,X,Y,Z) :- 
+    assert(pass(P,X,Y,Z)),
+    infer_hand(P),
+    pass_loop(X,Y,Z).
 
 /* All suspects, weapons, and rooms are cards in the game.
  * When you re-init, the "deck" may change. */
