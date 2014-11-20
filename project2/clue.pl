@@ -19,7 +19,7 @@ init :-
         write(' : '),
         read(Hand_size),
         assert(hand_size(Player,Hand_size))),
-    _),
+    _),nl,
     write('Please enter the suspects (characters) you\'d like available in the game.'),nl,
     write('Enter the word \'done\' to continue\'.'),nl,
     write('If you would like to play with classic suspects, enter \'default\''),nl,
@@ -99,6 +99,7 @@ game :-
     write('Showed me: '),
     read(Card_shown),
     showed_me(Shower, Card_shown),
+    infer_hand(Shower),
     assert(showed(Shower,X,Y,Z)), % think hard about when it comes full circle
     nl,write('-------------------------'),nl,
     game.
@@ -114,7 +115,25 @@ print_state :-
             write('Player: '),writeln(Player),
             write('    Possibilities : '),writeln(L),setof(X,in_hand(Player,X),Hand),
             write('    Hand          : '),writeln(Hand);true
-        ),_),nl,nl.
+        ),_),nl,
+    writeln('------------'),
+    nl,
+    write('Suspects: '),
+    findall(Suspect,
+        (
+            possible_suspect(Suspect)
+        ),S),
+    write(S),nl,
+    findall(Weapon,
+        (
+            possible_weapon(Weapon)
+        ),W),
+    write('Weapons:  '),write(W),nl,
+    findall(Room,
+        (
+            possible_room(Room)
+        ),R),
+    write('Rooms:    '),write(R),nl.
 
 
 pass_loop(X,Y,Z) :-
@@ -160,6 +179,7 @@ record_pass(P,X,Y,Z) :-
 :- dynamic
     hand_size/2. %track what's in one's hand
 
+
 /* what could be in the envelope */
 envelope(X,Y,Z) :- possible_suspect(X),possible_weapon(Y),possible_room(Z).
 possible_suspect(X) :- suspect(X),  not(in_hand(_,X)).
@@ -168,7 +188,8 @@ possible_weapon(X)  :- weapon(X),   not(in_hand(_,X)).
 
 /* what could be in someones hand innocent until proven guilty*/
 hand_possibility(P,X) :- card(X), in_hand(P,X). % for some reason adding the exclusion based on other player's hands doesn't work here.
-hand_possibility(P,X) :- card(X), hasnt_passed(P,X), not(in_hand(Other,X)), not(Other == P).
+hand_possibility(P,X) :- not_maxed(P),card(X), hasnt_passed(P,X), not(in_hand(Other,X)), not(Other == P).
+not_maxed(P) :- findall(X,in_hand(P,X),Hand), hand_size(P,Size), not(length(Hand,Size)).
 
 /* true if a player P hasn't yet passed on a card X just to compactify things */
 hasnt_passed(P,X) :- not(pass(P,X,_,_)), not(pass(P,_,X,_)), not(pass(P,_,_,X)).
