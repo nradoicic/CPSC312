@@ -6,6 +6,18 @@
    ---------------------------------------------------------------------------*/
 %
 
+/* room, weapon, and suspect are the three types of cards which may be defined for a game of clue */
+:- dynamic
+    room/1. % where the murder happened
+:- dynamic
+    weapon/1. % how the murder happened
+:- dynamic
+    suspect/1. % who did the murdering
+
+    /* players are also defined at runtime */
+:- dynamic
+    player/1. % the players are distinct from the suspects
+
 /* in_hand(Player,Card) is true when we know a card is definitely in someone's hand
    this may happen when a card is shown to us and can be inferred at certain specific points */
 :- dynamic
