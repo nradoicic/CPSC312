@@ -44,21 +44,16 @@ card(X) :- suspect(X).
 /* what could be in the envelope */
 envelope(X,Y,Z) :- possible_suspect(X), possible_weapon(Y), possible_room(Z).
 
-/* something could be in the envelope if it's not in anyone's hand */
-possible_suspect(X) :- suspect(X),  not(in_hand(_,X)).
-possible_room(X)    :- room(X),     not(in_hand(_,X)).
-possible_weapon(X)  :- weapon(X),   not(in_hand(_,X)).
+/* something could be in the envelope if it's not in anyone's hand 
+   ignore the possibilities if we know exactly what is in the envelope */
+possible_suspect(X) :- definite_suspect(X),!; suspect(X),  not(in_hand(_,X)).
+possible_room(X)    :- definite_room(X),!;    room(X),     not(in_hand(_,X)).
+possible_weapon(X)  :- definite_weapon(X),!;  weapon(X),   not(in_hand(_,X)).
 
-% definite envelope stuff doesn't work right.
-%possible_suspect(X) :- definite_suspect(X),!; suspect(X),  not(in_hand(_,X)).
-%possible_room(X)    :- definite_room(X),!;    room(X),     not(in_hand(_,X)).
-%possible_weapon(X)  :- definite_weapon(X),!;  weapon(X),   not(in_hand(_,X)).
-
-% this is finding any player where X isn't in their possibilities
-% we want it to be X not in any player's possibilities
-definite_suspect(X) :- suspect(X), not(hand_possibility(_,X)).
-definite_room(X)    :- room(X),    not(hand_possibility(_,X)).
-definite_weapon(X)  :- weapon(X),  not(hand_possibility(_,X)).
+/* something is definitely in the envelope if it is definitely not in anyone's hand */
+definite_suspect(X) :- suspect(X), not((player(P), hand_possibility(P,X))).
+definite_room(X)    :- room(X),    not((player(P), hand_possibility(P,X))).
+definite_weapon(X)  :- weapon(X),  not((player(P), hand_possibility(P,X))).
 
 /* what could be in someones hand
    something could be in someone's hand if it is in their hand
