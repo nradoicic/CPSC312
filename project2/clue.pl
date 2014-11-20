@@ -181,15 +181,22 @@ record_pass(P,X,Y,Z) :-
 
 
 /* what could be in the envelope */
-envelope(X,Y,Z) :- possible_suspect(X),possible_weapon(Y),possible_room(Z).
-possible_suspect(X) :- suspect(X),  not(in_hand(_,X)).
-possible_room(X)    :- room(X),     not(in_hand(_,X)).
-possible_weapon(X)  :- weapon(X),   not(in_hand(_,X)).
+envelope(X,Y,Z) :- possible_suspect(X), possible_weapon(Y), possible_room(Z).
+
+possible_suspect(X) :- definite_suspect(X),!; suspect(X),  not(in_hand(_,X)).
+possible_room(X)    :- definite_room(X),!;    room(X),     not(in_hand(_,X)).
+possible_weapon(X)  :- definite_weapon(X),!;  weapon(X),   not(in_hand(_,X)).
+
+definite_suspect(X) :- suspect(X), not(hand_possibility(_,X)).
+definite_room(X)    :- room(X),    not(hand_possibility(_,X)).
+definite_weapon(X)  :- weapon(X),  not(hand_possibility(_,X)).
 
 /* what could be in someones hand innocent until proven guilty*/
 hand_possibility(P,X) :- card(X), in_hand(P,X). % for some reason adding the exclusion based on other player's hands doesn't work here.
 hand_possibility(P,X) :- not_maxed(P),card(X), hasnt_passed(P,X), not(in_hand(Other,X)), not(Other == P).
-not_maxed(P) :- findall(X,in_hand(P,X),Hand), hand_size(P,Size), not(length(Hand,Size)).
+not_maxed(P) :- find_unique(X,in_hand(P,X),Hand), hand_size(P,Size), not(length(Hand,Size)).
+
+find_unique(X,Goal,L) :- setof(X,Goal,L),!;L=[].
 
 /* true if a player P hasn't yet passed on a card X just to compactify things */
 hasnt_passed(P,X) :- not(pass(P,X,_,_)), not(pass(P,_,X,_)), not(pass(P,_,_,X)).
