@@ -183,10 +183,17 @@ record_pass(P,X,Y,Z) :-
 /* what could be in the envelope */
 envelope(X,Y,Z) :- possible_suspect(X), possible_weapon(Y), possible_room(Z).
 
-possible_suspect(X) :- definite_suspect(X),!; suspect(X),  not(in_hand(_,X)).
-possible_room(X)    :- definite_room(X),!;    room(X),     not(in_hand(_,X)).
-possible_weapon(X)  :- definite_weapon(X),!;  weapon(X),   not(in_hand(_,X)).
+possible_suspect(X) :- suspect(X),  not(in_hand(_,X)).
+possible_room(X)    :- room(X),     not(in_hand(_,X)).
+possible_weapon(X)  :- weapon(X),   not(in_hand(_,X)).
 
+% definite envelope stuff doesn't work right.
+%possible_suspect(X) :- definite_suspect(X),!; suspect(X),  not(in_hand(_,X)).
+%possible_room(X)    :- definite_room(X),!;    room(X),     not(in_hand(_,X)).
+%possible_weapon(X)  :- definite_weapon(X),!;  weapon(X),   not(in_hand(_,X)).
+
+% this is finding any player where X isn't in their possibilities
+% we want it to be X not in any player's possibilities
 definite_suspect(X) :- suspect(X), not(hand_possibility(_,X)).
 definite_room(X)    :- room(X),    not(hand_possibility(_,X)).
 definite_weapon(X)  :- weapon(X),  not(hand_possibility(_,X)).
@@ -204,9 +211,10 @@ hasnt_passed(P,X) :- not(pass(P,X,_,_)), not(pass(P,_,X,_)), not(pass(P,_,_,X)).
 /* we can infer what is in someone's hand based on what they have shown and knowing what is NOT in their hand
    but defining this as a condition on in_hand causes issues of infinite looping between in_hand and hand_possibility
    so instead we keep in_hand as pure data, it is only ever asserted, not inferred.*/
-infer_hand(P) :- showed(P, X, Y, Z), not(hand_possibility(P,Y)), not(hand_possibility(P,Z)), assert(in_hand(P,X));!.
-infer_hand(P) :- showed(P, X, Y, Z), not(hand_possibility(P,X)), not(hand_possibility(P,Z)), assert(in_hand(P,Y));!.
-infer_hand(P) :- showed(P, X, Y, Z), not(hand_possibility(P,X)), not(hand_possibility(P,Y)), assert(in_hand(P,Z));!.
+infer_hand(P) :- infer_hand1(P),infer_hand2(P),infer_hand3(P).
+infer_hand1(P) :- showed(P, X, Y, Z), not(hand_possibility(P,Y)), not(hand_possibility(P,Z)), assert(in_hand(P,X));true.
+infer_hand2(P) :- showed(P, X, Y, Z), not(hand_possibility(P,X)), not(hand_possibility(P,Z)), assert(in_hand(P,Y));true.
+infer_hand3(P) :- showed(P, X, Y, Z), not(hand_possibility(P,X)), not(hand_possibility(P,Y)), assert(in_hand(P,Z));true.
 
 /* tells us if we know absolutely what is in someone's hand */
 certain(P) :- setof(X,in_hand(P,X),Hand), setof(X,hand_possibility(P,X),Poss), permutation(Hand,Poss).
