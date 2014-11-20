@@ -74,11 +74,15 @@ hasnt_passed(P,X) :- not(pass(P,X,_,_)), not(pass(P,_,X,_)), not(pass(P,_,_,X)).
    but defining this as a condition on in_hand causes issues of infinite looping between in_hand and hand_possibility
    so instead we keep in_hand as pure data, it is only ever asserted, not inferred. 
    this predicate should always return true otherwise the game loop may not continue properly*/
+infer_hands   :- findall(P,(player(P),infer_hand(P)),_).
 infer_hand(P) :- infer_hand1(P),infer_hand2(P),infer_hand3(P).
 /* These all need to return true so that we are guaranteed that all the asserts may be reached. */
-infer_hand1(P) :- showed(P, X, Y, Z), not(hand_possibility(P,Y)), not(hand_possibility(P,Z)), assert(in_hand(P,X));true.
-infer_hand2(P) :- showed(P, X, Y, Z), not(hand_possibility(P,X)), not(hand_possibility(P,Z)), assert(in_hand(P,Y));true.
-infer_hand3(P) :- showed(P, X, Y, Z), not(hand_possibility(P,X)), not(hand_possibility(P,Y)), assert(in_hand(P,Z));true.
+infer_hand1(P) :- showed(P, X, Y, Z), not(hand_possibility(P,Y)), not(hand_possibility(P,Z)), add_to_hand(P,X);true.
+infer_hand2(P) :- showed(P, X, Y, Z), not(hand_possibility(P,X)), not(hand_possibility(P,Z)), add_to_hand(P,Y);true.
+infer_hand3(P) :- showed(P, X, Y, Z), not(hand_possibility(P,X)), not(hand_possibility(P,Y)), add_to_hand(P,Z);true.
+
+/* helper to assert what is in someone's hand without adding duplicates */
+add_to_hand(Player,Card) :- in_hand(Player,Card),!; assert(in_hand(Player,Card)).
 
 
 /* -----------------------------------------------------------------------------
@@ -166,6 +170,7 @@ new_card(X) :- player(Me),!,assert(in_hand(Me,X)),input_hand.
    doesn't output anything useful yet, need to know when to ask
    we can dump data all the time whatevs.*/
 game :-
+    infer_hands_settle,
     print_state,
     write('Whose turn is it?      : '),
     read(Player),
@@ -180,14 +185,16 @@ game :-
     write('Showed me: '),
     read(Card_shown),
     showed_me(Shower, Card_shown),
-    infer_hand(Shower),
     assert(showed(Shower,X,Y,Z)), % think hard about when it comes full circle
     nl,writeln('---------------------------------------'),
     game.
 
+/* predicate which will perform inferences on the history of the game until no more can be performed */
+infer_hands_settle :- findall(X,in_hand(_,X),L), infer_hands, findall(X,in_hand(_,X),NL),(NL==L,!;infer_hands_settle).
+    
 /* helper which records what's in the hand of a player who shows us a card */
 showed_me(_,done) :- true.
-showed_me(Player,Card) :- assert(in_hand(Player,Card)).
+showed_me(Player,Card) :- add_to_hand(Player,Card).
 
 /* helper which records who passes on a suggestion */
 pass_loop(X,Y,Z) :-
@@ -198,7 +205,6 @@ pass_loop(X,Y,Z) :-
 record_pass(done,_,_,_) :- !.
 record_pass(P,X,Y,Z) :-
     assert(pass(P,X,Y,Z)),
-    infer_hand(P),
     pass_loop(X,Y,Z).
     
 /* dumps out our current notes */
@@ -263,6 +269,9 @@ def_init :-
     assert(player(a)),
     assert(player(b)),
     assert(player(c)),
+    assert(hand_size(a,6)),
+    assert(hand_size(b,6)),
+    assert(hand_size(c,6)),
     default_suspects,
     default_weapons,
     default_rooms,
@@ -274,4 +283,8 @@ clean_state :-
     retractall(suspect(_)),
     retractall(weapon(_)),
     retractall(room(_)),
-    retractall(in_hand(_,_)). 
+    retractall(in_hand(_,_)),
+    retractall(hand_size(_,_)),
+    retractall(pass(_,_,_,_)),
+    retractall(suggested(_,_,_,_)),
+    retractall(showed(_,_,_,_)). 
