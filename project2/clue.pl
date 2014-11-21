@@ -10,8 +10,8 @@
    this may happen when a card is shown to us and can be inferred at certain specific points */
 :- dynamic
     in_hand/2. %track what's in one's hand
-    
-/* hand_size(Player,Int) tracks the number of cards in a player's hand. This is used to 
+
+/* hand_size(Player,Int) tracks the number of cards in a player's hand. This is used to
    infer when we're done determining what's in a players hand. */
 :- dynamic
     hand_size/2. %track what's in one's hand
@@ -44,7 +44,7 @@ card(X) :- suspect(X).
 /* what could be in the envelope */
 envelope(X,Y,Z) :- possible_suspect(X), possible_weapon(Y), possible_room(Z).
 
-/* something could be in the envelope if it's not in anyone's hand 
+/* something could be in the envelope if it's not in anyone's hand
    ignore the possibilities if we know exactly what is in the envelope */
 possible_suspect(X) :- definite_suspect(X),!; suspect(X),  not(in_hand(_,X)).
 possible_room(X)    :- definite_room(X),!;    room(X),     not(in_hand(_,X)).
@@ -72,7 +72,7 @@ hasnt_passed(P,X) :- not(pass(P,X,_,_)), not(pass(P,_,X,_)), not(pass(P,_,_,X)).
 
 /* we can infer what is in someone's hand based on what they have shown and knowing what is NOT in their hand
    but defining this as a condition on in_hand causes issues of infinite looping between in_hand and hand_possibility
-   so instead we keep in_hand as pure data, it is only ever asserted, not inferred. 
+   so instead we keep in_hand as pure data, it is only ever asserted, not inferred.
    this predicate should always return true otherwise the game loop may not continue properly*/
 infer_hands   :- findall(P,(player(P),infer_hand(P)),_).
 infer_hand(P) :- infer_hand1(P),infer_hand2(P),infer_hand3(P).
@@ -170,6 +170,7 @@ new_card(X) :- player(Me),!,assert(in_hand(Me,X)),input_hand.
    doesn't output anything useful yet, need to know when to ask
    we can dump data all the time whatevs.*/
 game :-
+    get_time(X),atom_number(Z,X),atom_string(X,Y),qsave_program(Y),
     infer_hands_settle,
     print_state,
     write('Whose turn is it?      : '),
@@ -191,7 +192,7 @@ game :-
 
 /* predicate which will perform inferences on the history of the game until no more can be performed */
 infer_hands_settle :- findall(X,in_hand(_,X),L), infer_hands, findall(X,in_hand(_,X),NL),(NL==L,!;infer_hands_settle).
-    
+
 /* helper which records what's in the hand of a player who shows us a card */
 showed_me(_,done) :- true.
 showed_me(Player,Card) :- add_to_hand(Player,Card).
@@ -206,7 +207,7 @@ record_pass(done,_,_,_) :- !.
 record_pass(P,X,Y,Z) :-
     assert(pass(P,X,Y,Z)),
     pass_loop(X,Y,Z).
-    
+
 /* dumps out our current notes */
 print_state :-
     findall(Player,
@@ -276,9 +277,9 @@ def_init :-
     default_weapons,
     default_rooms,
     game.
-    
+
 /* resets the game world */
-clean_state :- 
+clean_state :-
     retractall(player(_)),
     retractall(suspect(_)),
     retractall(weapon(_)),
@@ -287,4 +288,4 @@ clean_state :-
     retractall(hand_size(_,_)),
     retractall(pass(_,_,_,_)),
     retractall(suggested(_,_,_,_)),
-    retractall(showed(_,_,_,_)). 
+    retractall(showed(_,_,_,_)).
