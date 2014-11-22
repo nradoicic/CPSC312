@@ -182,7 +182,7 @@ new_card(X) :- player(Me),!,assert(in_hand(Me,X)),input_hand.
    doesn't output anything useful yet, need to know when to ask
    we can dump data all the time whatevs.*/
 game :-
-    get_time(X),atom_number(Z,X),atom_string(X,Y),qsave_program(Y),
+    get_time(A),atom_number(C,A),atom_string(A,B),qsave_program(B),
     infer_hands_settle,
     print_state,
     write('Whose turn is it?      : '),
