@@ -214,8 +214,8 @@ instructions :-
    doesn't output anything useful yet, need to know when to ask
    we can dump data all the time whatevs.*/
 game :-
-    %get_time(A),atom_number(C,A),atom_string(A,B),qsave_program(B),
-    infer_hands_settle,
+    get_time(A),atom_number(C,A),atom_string(A,B),qsave_program(B), % save the current game state
+    infer_hands_settle,     
     print_state,
     writeln('Which player is making a suggestion?'),
     write('    Player name: '),read(Player),nl,
