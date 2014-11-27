@@ -75,6 +75,7 @@ Instructions for operation:
         This feature can also be used to help debug the game, since it allows a user to audit each round of the game and see which inferences have been made.
 
         The executable may be launched from the command line in either Windows or any Unix system, as long as the file was generated on that same system.
+        
         Windows Troubleshooting:
         If the executable does not launch in Windows (eg. Missing DLL error) it may be launched via SWIPL in the command line
             eg. "C:\Program Files (x86)\swipl\bin\swipl" -x 1417111576.853155
@@ -82,7 +83,6 @@ Instructions for operation:
         Alternatively the state may be resumed with the game goal from the command line
             eg. "C:\Program Files (x86)\swipl\bin\swipl" -x 1417111576.853155 -g game
             
-        Currently we are unsure how to launch the windows graphical interpreter with the saved state from the command line if the executable state does not run.
-        If all else fails placing the saved state in the directory containing the SWIPL executable files (eg. "C:\Program Files (x86)\swipl\bin\") 
-        should allow the executable state to be run from the command line, launching the windows graphical interpreter.
+        To launch the Windows graphical interpreter instead of the command line version of SWIPL simply substitute "swipl-win.exe" for "swipl"
+            eg. "C:\Program Files (x86)\swipl\bin\swipl-win.exe" -x 1417111576.853155 -g game
      
