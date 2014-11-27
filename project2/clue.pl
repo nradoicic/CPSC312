@@ -214,7 +214,7 @@ instructions :-
    doesn't output anything useful yet, need to know when to ask
    we can dump data all the time whatevs.*/
 game :-
-    get_time(A),atom_number(C,A),atom_string(A,B),qsave_program(B), % save the current game state
+    %save_game,
     infer_hands_settle,     
     print_state,
     writeln('Which player is making a suggestion?'),
@@ -233,6 +233,9 @@ game :-
     assert(showed(Shower,X,Y,Z)), % think hard about when it comes full circle
     writeln('------------------------------------------------------------------'),nl,
     game.
+ 
+/* dumps the current game state to an executable prolog file whose name is the current epoch time*/ 
+save_game :- get_time(A),atom_number(C,A),atom_string(A,B),qsave_program(B).
 
 /* predicate which will perform inferences on the history of the game until no more can be performed */
 infer_hands_settle :- findall(X,in_hand(_,X),L), infer_hands, findall(X,in_hand(_,X),NL),(NL==L,!;infer_hands_settle).
@@ -317,7 +320,7 @@ default_rooms :-
     assert(room(lounge)),
     assert(room(dining)),
     nl,writeln('The rooms are: '),
-    findall(X,(weapon(X),write('    '),writeln(X)),_).
+    findall(X,(room(X),write('    '),writeln(X)),_).
 
 def_init :-
     clean_state,
