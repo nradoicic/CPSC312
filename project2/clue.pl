@@ -79,6 +79,8 @@ not_maxed(P) :- find_unique(X,in_hand(P,X),Hand), hand_size(P,Size), not(length(
 /* setof results in false instead of [] if nothing satisfies the goal, but we want [] with no duplicates */
 find_unique(X,Goal,L) :- setof(X,Goal,L),!;L=[].
 
+
+
 /* true if a player P hasn't yet passed on a card X just to compactify things */
 hasnt_passed(P,X) :- not(pass(P,X,_,_)), not(pass(P,_,X,_)), not(pass(P,_,_,X)).
 
@@ -87,14 +89,16 @@ hasnt_passed(P,X) :- not(pass(P,X,_,_)), not(pass(P,_,X,_)), not(pass(P,_,_,X)).
    so instead we keep in_hand as pure data, it is only ever asserted, not inferred.
    this predicate should always return true otherwise the game loop may not continue properly*/
 infer_hands   :- findall(P,(player(P),infer_hand(P)),_).
-infer_hand(P) :- infer_hand1(P),infer_hand2(P),infer_hand3(P).
+infer_hand(P) :- infer_hand1(P),infer_hand2(P),infer_hand3(P),infer_hand4(P).
 /* These all need to return true so that we are guaranteed that all the asserts may be reached. */
-infer_hand1(P) :- showed(P, X, Y, Z), not(hand_possibility(P,Y)), not(hand_possibility(P,Z)), add_to_hand(P,X);true.
-infer_hand2(P) :- showed(P, X, Y, Z), not(hand_possibility(P,X)), not(hand_possibility(P,Z)), add_to_hand(P,Y);true.
-infer_hand3(P) :- showed(P, X, Y, Z), not(hand_possibility(P,X)), not(hand_possibility(P,Y)), add_to_hand(P,Z);true.
+infer_hand1(P) :- showed(P, X, Y, Z), not(hand_possibility(P,Y)), not(hand_possibility(P,Z)), add_to_hand(P,X).
+infer_hand2(P) :- showed(P, X, Y, Z), not(hand_possibility(P,X)), not(hand_possibility(P,Z)), add_to_hand(P,Y).
+infer_hand3(P) :- showed(P, X, Y, Z), not(hand_possibility(P,X)), not(hand_possibility(P,Y)), add_to_hand(P,Z).
+/* additionally if a player's hand size is the same as the size of their possiblities we may add all possibilities to their hand */
+infer_hand4(P) :- hand_size(P,Size), find_unique(X,hand_possibility(P,X),Poss), length(Poss,Size), find_unique(X,(hand_possibility(P,X),add_to_hand(P,X)),_).
 
 /* helper to assert what is in someone's hand without adding duplicates */
-add_to_hand(Player,Card) :- in_hand(Player,Card),!; assert(in_hand(Player,Card)).
+add_to_hand(Player,Card) :- in_hand(Player,Card),!; assert(in_hand(Player,Card)),!;true.
 
 
 /* -----------------------------------------------------------------------------
