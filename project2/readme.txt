@@ -61,10 +61,28 @@ Instructions for operation:
         * If a card of a type (room, suspect, weapon) must be in the envelope no other card of that type may be in the envelope.
 
 
-4. Extra features
-    4.1. Game Save
+4. Extra Features
+
+    4.1. Error Recovery
+        The entire game state is kept as facts and inferences 
+        If the game loop was forced to exit the game may be resumed without losing any progress by invoking the predicate "game."
+    
+    4.2. Game Save
         At the start of each round, a snapshot of each state is saved to a file in the same directory as the clue.pl file.
         The save file's name will be a Linux time-stamp of when the game was saved.
         The save file is an executable which, when run, will take the user to the particular turn during which the game was saved.
         This can be used to revert to a previous state to correct an input error, which are difficult to correct since the game makes a series of asserts during each round.
         This feature can also be used to help debug the game, since it allows a user to audit each round of the game and see which inferences have been made.
+
+        The executable may be launched from the command line in either Windows or any Unix system, as long as the file was generated on that same system.
+        Windows Troubleshooting:
+        If the executable does not launch in Windows (eg. Missing DLL error) it may be launched via SWIPL in the command line
+            eg. "C:\Program Files (x86)\swipl\bin\swipl" -x 1417111576.853155
+        This will open SWIPL with the current game state loaded, to resume game execution invoke the predicate "game."
+        Alternatively the state may be resumed with the game goal from the command line
+            eg. "C:\Program Files (x86)\swipl\bin\swipl" -x 1417111576.853155 -g game
+            
+        Currently we are unsure how to launch the windows graphical interpreter with the saved state from the command line if the executable state does not run.
+        If all else fails placing the saved state in the directory containing the SWIPL executable files (eg. "C:\Program Files (x86)\swipl\bin\") 
+        should allow the executable state to be run from the command line, launching the windows graphical interpreter.
+     
