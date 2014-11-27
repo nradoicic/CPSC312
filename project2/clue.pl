@@ -4,7 +4,6 @@
 /* -----------------------------------------------------------------------------
    -----------------------------Dynamic Actions---------------------------------
    ---------------------------------------------------------------------------*/
-%
 
 /* room, weapon, and suspect are the three types of cards which may be defined for a game of clue */
 :- dynamic
@@ -14,7 +13,7 @@
 :- dynamic
     suspect/1. % who did the murdering
 
-    /* players are also defined at runtime */
+/* players are also defined at runtime */
 :- dynamic
     player/1. % the players are distinct from the suspects
 
@@ -44,10 +43,11 @@
 :- dynamic
     pass/4. %when someone passes on a suggestion
 
+
 /* -----------------------------------------------------------------------------
    ------------------------------Logic Engine-----------------------------------
    ---------------------------------------------------------------------------*/
-%
+
 /* cards are either rooms, weapons or suspects */
 card(X) :- room(X).
 card(X) :- weapon(X).
@@ -76,6 +76,7 @@ hand_possibility(P,X) :- not_maxed(P),card(X), hasnt_passed(P,X), not(in_hand(Ot
 
 /* determines if we've figured out every card in a players hand based on the known size of their hand */
 not_maxed(P) :- find_unique(X,in_hand(P,X),Hand), hand_size(P,Size), not(length(Hand,Size)).
+
 /* setof results in false instead of [] if nothing satisfies the goal, but we want [] with no duplicates */
 find_unique(X,Goal,L) :- setof(X,Goal,L),!;L=[].
 
@@ -104,7 +105,7 @@ add_to_hand(Player,Card) :- in_hand(Player,Card),!; assert(in_hand(Player,Card))
 /* -----------------------------------------------------------------------------
    -----------------------------Interface Code----------------------------------
    ---------------------------------------------------------------------------*/
-%
+
 clue :- init.
 /* Little wizard to get everything going */
 init :-
@@ -182,6 +183,7 @@ new_room(X) :- assert(room(X)),input_rooms.
 new_card(done) :- !.
 new_card(X) :- player(Me),!,assert(in_hand(Me,X)),input_hand.
 
+/* Sweet ASCII banner */
 banner :-
     nl,
     writeln('                 ________    __  __________'),
@@ -193,7 +195,7 @@ banner :-
 
 /* instructions on how to input data */
 instructions :-
-    writeln('Welcome to Clue helper!\n'),
+    writeln('Welcome to Clue Helper!\n'),
     writeln('The program will track the data from a game of clue and will make'),
     writeln('logical inferences based on the passage of the game.  The program'),
     writeln('will tell you what it knows is in each player\'s hand, as well as'),
@@ -250,7 +252,8 @@ record_pass(P,X,Y,Z) :-
     assert(pass(P,X,Y,Z)),
     pass_loop(X,Y,Z).
 
-/* dumps out our current notes */
+/* dumps out our current notes
+*  this is done at the start of each round */
 print_state :-
     nl,writeln('Each player\'s definite hand and possible cards in hand:'),nl,
     findall(Player,
@@ -281,7 +284,8 @@ print_state :-
     write('    Rooms:    '),write(R),nl,
     nl,writeln('------------------------------------------------------------------'),nl.
 
-/* default initializations */
+/* default initializations
+*  If the user would like to play with standard clue pieces this will make the appropriate asserts. */
 default_suspects :-
     assert(suspect(peacock)),
     assert(suspect(mustard)),
