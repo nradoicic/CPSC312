@@ -109,26 +109,28 @@ clue :- init.
 /* Little wizard to get everything going */
 init :-
     clean_state,
+    banner,
     instructions,
-    writeln('Please enter the names players playing today.'),
-    writeln('Enter the word \'done\' once all players are entered\'.'),
+    writeln('Please enter the names of players playing today (starting with'),
+    writeln('your name).  Enter the word \'done\' once all players are entered\'.'),
     input_players,nl,nl,
-    writeln('How many cards does each player have, if you are uncertain enter the maximum number of cards which may be in their hand.'),
+    writeln('How many cards does each player have? If you are uncertain, enter'),
+    writeln('the maximum number of cards which may be in their hand.'),
     findall(Player,
         (player(Player),
         write('    '),write(Player),write(' : '),
         read(Hand_size),
         assert(hand_size(Player,Hand_size))),
     _),nl,
-    writeln('Please enter the suspects (characters) you\'d like available in the game.'),
+    writeln('Please enter the suspects (characters) you\'d like to play with.'),
     writeln('Enter the word \'done\' to continue\'.'),
     writeln('If you would like to play with classic suspects, enter \'default\''),
     input_suspects,nl,nl,
-    writeln('Please enter the weapons you\'d like available in the game.'),
+    writeln('Please enter the weapons you\'d like to play with.'),
     writeln('Enter the word \'done\' to continue\'.'),
     writeln('If you would like to play with classic weapons, enter \'default\''),
     input_weapons,nl,nl,
-    writeln('Please enter the rooms you\'d like available in the game.'),
+    writeln('Please enter the rooms you\'d like to play with.'),
     writeln('Enter the word \'done\' to continue\'.'),
     writeln('If you would like to play with classic rooms, enter \'default\''),
     input_rooms,nl,nl,
@@ -136,7 +138,7 @@ init :-
     writeln('Enter the word \'done\' to continue\'.'),
     input_hand,
     nl,writeln('****** Ready to play! ******'),nl,
-    writeln('---------------------------------------'),
+    writeln('------------------------------------------------------------------'),
     game.
 
 /* Helper functions which loop to keep entering each type of card */
@@ -180,16 +182,29 @@ new_room(X) :- assert(room(X)),input_rooms.
 new_card(done) :- !.
 new_card(X) :- player(Me),!,assert(in_hand(Me,X)),input_hand.
 
+banner :-
+    nl,
+    writeln('                 ________    __  __________'),
+    writeln('                / ____/ /   / / / / ____/ /'),
+    writeln('               / /   / /   / / / / __/ / /'),
+    writeln('              / /___/ /___/ /_/ / /___/_/'),
+    writeln('              \\____/_____/\\____/_____(_)\n'),
+    writeln('------------------------------------------------------------------\n').
+
 /* instructions on how to input data */
 instructions :-
-    writeln('---------------------------------------'),
-    writeln('Welcome to Clue helper!'),
-    writeln('The program will track the data from a game of clue and will make logical inferences based on the passage of the game.'),
-    writeln('The program will tell you what it knows is in each player\'s hand, as well as all cards which may be in each player\'s hand.'),
-    writeln('The program will tell you which cards may be in the envelope.'),
-    writeln('When inputting data ensure that the name of a card or player is in lower case and does not contain any punctuation, end each entry with a period.'),
-    writeln('When you are done entering data to a prompt, or if a prompt does not apply enter \'done.\''),
-    writeln('---------------------------------------'),nl.
+    writeln('Welcome to Clue helper!\n'),
+    writeln('The program will track the data from a game of clue and will make'),
+    writeln('logical inferences based on the passage of the game.  The program'),
+    writeln('will tell you what it knows is in each player\'s hand, as well as'),
+    writeln('all cards which may be in each player\'s hand.  The program will'),
+    writeln('tell you which cards may be in the envelope.\n'),
+    writeln('When inputting data ensure that the name of a card or player is in'),
+    writeln('lower case and does not contain any punctuation, end each entry'),
+    writeln('with a period.\n'),
+    writeln('When you are done entering data to a prompt, or if a prompt does'),
+    writeln('not apply enter \'done.\'\n'),
+    writeln('------------------------------------------------------------------').
 
 /* Game loop
    runs through the steps of the game
@@ -210,11 +225,11 @@ game :-
     pass_loop(X,Y,Z),nl,
     writeln('Which player showed a card?'),
     write('    Player name: '),read(Shower),nl,
-    writeln('If they showed you a card what was it'),
+    writeln('If they showed you a card what was it? (if not, enter \'done\')'),
     write('    Card name:   '),read(Card_shown),nl, 
     showed_me(Shower, Card_shown),
     assert(showed(Shower,X,Y,Z)), % think hard about when it comes full circle
-    writeln('---------------------------------------'),nl,
+    writeln('------------------------------------------------------------------'),nl,
     game.
 
 /* predicate which will perform inferences on the history of the game until no more can be performed */
@@ -244,11 +259,11 @@ print_state :-
             setof(X,hand_possibility(Player,X),L),
             write('Player: '),writeln(Player),
             write('    Possibilities : '),writeln(L),setof(X,in_hand(Player,X),Hand),
-            write('    Hand          : '),writeln(Hand);true
+            write('    Hand          : '),writeln(Hand),nl;true
         ),_),nl,
-    writeln('---------------------------------------'),
-    nl,writeln('The possible cards which may be in the envelope:'),nl,
-    write('Suspects: '),
+    writeln('------------------------------------------------------------------'),nl,
+    nl,writeln('The possible cards which may be in the envelope:'),
+    write('    Suspects: '),
     findall(Suspect,
         (
             possible_suspect(Suspect)
@@ -258,13 +273,13 @@ print_state :-
         (
             possible_weapon(Weapon)
         ),W),
-    write('Weapons:  '),write(W),nl,
+    write('    Weapons:  '),write(W),nl,
     findall(Room,
         (
             possible_room(Room)
         ),R),
-    write('Rooms:    '),write(R),nl,
-    nl,writeln('---------------------------------------'),nl.
+    write('    Rooms:    '),write(R),nl,
+    nl,writeln('------------------------------------------------------------------'),nl.
 
 /* default initializations */
 default_suspects :-
