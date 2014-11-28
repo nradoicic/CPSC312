@@ -62,6 +62,8 @@ possible_suspect(X) :- definite_suspect(X),!; suspect(X),  not(in_hand(_,X)).
 possible_room(X)    :- definite_room(X),!;    room(X),     not(in_hand(_,X)).
 possible_weapon(X)  :- definite_weapon(X),!;  weapon(X),   not(in_hand(_,X)).
 
+possibly_in_envelope(X) :- possible_suspect(X);possible_room(X);possible_weapon(X).
+
 /* something is definitely in the envelope if it is definitely not in anyone's hand */
 definite_suspect(X) :- suspect(X), not((player(P), hand_possibility(P,X))).
 definite_room(X)    :- room(X),    not((player(P), hand_possibility(P,X))).
@@ -72,7 +74,7 @@ definite_weapon(X)  :- weapon(X),  not((player(P), hand_possibility(P,X))).
    something could be in someone's hand if it's not in anyone else's hand and they haven't passed on it
    additionally once we know everything in someone's hand we don't need to consider any extra possibilities */
 hand_possibility(P,X) :- card(X), in_hand(P,X). % for some reason adding the exclusion based on other player's hands doesn't work here.
-hand_possibility(P,X) :- not_maxed(P),card(X), hasnt_passed(P,X), not(in_hand(Other,X)), not(Other == P).
+hand_possibility(P,X) :- not_maxed(P), card(X), hasnt_passed(P,X), not(in_hand(Other,X)), not(Other == P).
 
 /* determines if we've figured out every card in a players hand based on the known size of their hand */
 not_maxed(P) :- find_unique(X,in_hand(P,X),Hand), hand_size(P,Size), not(length(Hand,Size)).
@@ -90,13 +92,18 @@ hasnt_passed(P,X) :- not(pass(P,X,_,_)), not(pass(P,_,X,_)), not(pass(P,_,_,X)).
    so instead we keep in_hand as pure data, it is only ever asserted, not inferred.
    this predicate should always return true otherwise the game loop may not continue properly*/
 infer_hands   :- findall(P,(player(P),infer_hand(P)),_).
-infer_hand(P) :- infer_hand1(P),infer_hand2(P),infer_hand3(P),infer_hand4(P).
+infer_hand(P) :- infer_hand1(P),infer_hand2(P),infer_hand3(P),infer_hand4(P),infer_hand5(P).
 /* These all need to return true so that we are guaranteed that all the asserts may be reached. */
-infer_hand1(P) :- showed(P, X, Y, Z), not(hand_possibility(P,Y)), not(hand_possibility(P,Z)), add_to_hand(P,X).
-infer_hand2(P) :- showed(P, X, Y, Z), not(hand_possibility(P,X)), not(hand_possibility(P,Z)), add_to_hand(P,Y).
-infer_hand3(P) :- showed(P, X, Y, Z), not(hand_possibility(P,X)), not(hand_possibility(P,Y)), add_to_hand(P,Z).
+infer_hand1(P) :- showed(P, X, Y, Z), not(hand_possibility(P,Y)), not(hand_possibility(P,Z)), add_to_hand(P,X);true.
+infer_hand2(P) :- showed(P, X, Y, Z), not(hand_possibility(P,X)), not(hand_possibility(P,Z)), add_to_hand(P,Y);true.
+infer_hand3(P) :- showed(P, X, Y, Z), not(hand_possibility(P,X)), not(hand_possibility(P,Y)), add_to_hand(P,Z);true.
 /* additionally if a player's hand size is the same as the size of their possiblities we may add all possibilities to their hand */
-infer_hand4(P) :- hand_size(P,Size), find_unique(X,hand_possibility(P,X),Poss), length(Poss,Size), find_unique(X,(hand_possibility(P,X),add_to_hand(P,X)),_).
+infer_hand4(P) :- hand_size(P,Size), find_unique(X,hand_possibility(P,X),Poss), length(Poss,Size), find_unique(X,(hand_possibility(P,X),add_to_hand(P,X)),_);true.
+/* additionally if a card could not be in any other player's hand, or in the envelope */
+infer_hand5(P)  :- infer_hand5s(P),infer_hand5w(P),infer_hand5r(P).
+infer_hand5s(P) :- suspect(X), hand_possibility(P,X), not(in_hand(P,X)), find_unique(Y,possible_suspect(Y),Z), not(member(X,Z)), not((player(Other), Other \=P, hand_possibility(Other,X))), add_to_hand(P,X);true.
+infer_hand5w(P) :- weapon(X),  hand_possibility(P,X), not(in_hand(P,X)), find_unique(Y,possible_weapon(Y),Z), not(member(X,Z)), not((player(Other), Other \=P, hand_possibility(Other,X))), add_to_hand(P,X);true.
+infer_hand5r(P) :- room(X),    hand_possibility(P,X), not(in_hand(P,X)), find_unique(Y,possible_room(Y),Z), not(member(X,Z)), not((player(Other), Other \=P, hand_possibility(Other,X))), add_to_hand(P,X);true.
 
 /* helper to assert what is in someone's hand without adding duplicates */
 add_to_hand(Player,Card) :- in_hand(Player,Card),!; assert(in_hand(Player,Card)),!;true.
